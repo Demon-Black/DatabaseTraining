@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+	<style type="text/css">
+	body, html{width: 100%;height: 100%;margin:0;font-family:"微软雅黑";}
+		#allmap{height:600px;width:100%;}
+		#r-result{width:100%;}
+	</style>
+	<script type="text/javascript" src="http://api.map.baidu.com/api?v=2.0&ak=XfOyCwyaOfHNRGWKVc9ZTa7GAXuuueOt"></script>
+	<link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet">
+	<title>地图展示</title>
+</head>
+<body>
+	<div id="allmap"></div>
+	<div id="r-result">
+		<div class="row">
+		  <div class="col-lg-2" style="margin-left: 10px;">
+		    <div class="input-group">
+		      <span class="input-group-addon">乘客经度</span>
+  				<input type="text" class="form-control" id="x1" aria-describedby="basic-addon3">
+		    </div><!-- /input-group -->
+		  </div><!-- /.col-lg-6 -->
+		  <div class="col-lg-2">
+		    <div class="input-group">
+		      	<span class="input-group-addon">乘客纬度</span>
+  				<input type="text" class="form-control" id="y1" aria-describedby="basic-addon3">
+		    </div><!-- /input-group -->
+		  </div><!-- /.col-lg-6 -->
+		
+		
+		<div class="col-lg-2">
+		    <div class="input-group">
+		      <span class="input-group-addon">目标经度</span>
+  				<input type="text" class="form-control" id="x2" aria-describedby="basic-addon3">
+		    </div><!-- /input-group -->
+		  </div><!-- /.col-lg-6 -->
+
+		  <div class="col-lg-2">
+		    <div class="input-group">
+		      <span class="input-group-addon">目标纬度</span>
+  				<input type="text" class="form-control" id="y2" aria-describedby="basic-addon3">
+		    </div><!-- /input-group -->
+		  </div><!-- /.col-lg-6 -->
+		  </div><!-- /.row -->
+		<button type="button" class="btn btn-primary" style="margin-left: 10px;height: 30px; margin-top: 5px;" id="search">search</button>
+		<button type="button" class="btn btn-danger taxi" style="margin-left: 10px;height: 30px; margin-top: 5px; display: none;" id="taxi0">taxi1</button>
+		<button type="button" class="btn btn-danger taxi" style="margin-left: 10px;height: 30px; margin-top: 5px; display: none;" id="taxi1">taxi2</button>
+		<button type="button" class="btn btn-danger taxi" style="margin-left: 10px;height: 30px; margin-top: 5px; display: none;" id="taxi2">taxi3</button>
+		<button type="button" class="btn btn-danger taxi" style="margin-left: 10px;height: 30px; margin-top: 5px; display: none;" id="taxi3">taxi4</button>
+		<button type="button" class="btn btn-danger taxi" style="margin-left: 10px;height: 30px; margin-top: 5px; display: none;" id="taxi4">taxi5</button>
+		<button type="button" class="btn btn-default" style="margin-left: 10px;height: 30px; margin-top: 5px; display: none;" id="id_show"></button>
+	</div>
+	<script src="https://code.jquery.com/jquery.js"></script>
+	<script src="https://cdn.bootcss.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+</body>
+</html>
+<script type="text/javascript">
+	function taxi(x, y) {
+		this.x = x;
+		this.y = y;
+		this.id_ = 0;
+		this.available = false;
+		this.passenger_x = new Array();
+		this.passenger_y = new Array();
+		this.number = 0;
+	}
+
+	var cars = new Array(5);
+	for (i = 0; i < cars.length; i++) {
+		cars[i] = new taxi(0, 0);
+	}
+	
+	var map = new BMap.Map("allmap");
+	var myIcon = new BMap.Icon("http://lbsyun.baidu.com/jsdemo/img/fox.gif", new BMap.Size(300,157));
+	var point = new BMap.Point(116.404, 39.915);
+	map.centerAndZoom(point, 13);
+	map.enableScrollWheelZoom(true);
+</script>
+
+<script type="text/javascript">
+	$("#search").click(function () {
+		map.clearOverlays();
+		for (i = 0; i < 5; i++)
+			$("#taxi" + i).hide();
+		$("#id_show").hide();	
+		
+		var marker = new BMap.Marker(new BMap.Point(parseFloat($("#x1").val()), parseFloat($("#y1").val())), {icon:myIcon});
+		$.post('', {
+			'query': $("#x1").val() + " " + $("#y1").val() + " " + $("#x2").val() + " " + $("#y2").val(),
+		}, function (data) {
+			number = parseInt(data.n);
+			for (i = 0; i < number; i++) {
+				cars[i].number = data.cars[i].X.length;
+				cars[i].id_ = data.cars[i].id_;
+				cars[i].x = parseFloat(data.cars[i].x);
+				cars[i].y = parseFloat(data.cars[i].y);
+				cars[i].available = true;
+				for (j = 0; j < data.cars[i].X.length; j++) {
+					cars[i].passenger_x[j] = parseFloat(data.cars[i].X[j]);
+					cars[i].passenger_y[j] = parseFloat(data.cars[i].Y[j]);
+				}
+				$("#taxi" + i).show();
+			}
+			// alert(cars[0].id_)
+			// var c = new BMap.Marker(new BMap.Point(cars[0].x, cars[0].y));
+			map.addOverlay(marker);
+			// map.addOverlay(c);
+			// c.setAnimation(BMAP_ANIMATION_BOUNCE);
+		})
+	});
+
+	$(".taxi").click(function () {
+		var location = new BMap.Point(parseFloat($("#x1").val()), parseFloat($("#y1").val()));
+		var destination = new BMap.Point(parseFloat($("#x2").val()), parseFloat($("#y2").val()));
+		map.clearOverlays();
+		var f = parseInt(this.id.charAt(4));
+		var c = new BMap.Marker(new BMap.Point(cars[f].x, cars[f].y));
+		$("#id_show").text("ID:" + cars[f].id_ + " @(" + cars[f].x + " ," + cars[f].y + ")");
+		$("#id_show").show();
+		var marker = new BMap.Marker(location, {icon:myIcon});
+		map.addOverlay(marker);
+		map.addOverlay(c);
+		// alert();
+		var line_point = [destination];
+		// alert(cars[f].passenger_x.length);
+		for (var i = 0; i < cars[f].number; i++) {
+			line_point.push(new BMap.Point(cars[f].passenger_x[i], cars[f].passenger_y[i]));
+		}
+		var polyline1 = new BMap.Polyline([
+				new BMap.Point(cars[f].x, cars[f].y),
+				location
+			], {strokeColor:"green", strokeWeight:5, strokeOpacity:0.5});
+		var polyline2 = new BMap.Polyline(line_point,
+			{strokeColor:"blue", strokeWeight:5, strokeOpacity:0.5})
+		var polyline3 = new BMap.Polyline([
+				location, destination
+			], {strokeColor:"blue", strokeWeight:5, strokeOpacity:0.5});
+		map.addOverlay(polyline1);
+		map.addOverlay(polyline2);
+		map.addOverlay(polyline3);
+		c.setAnimation(BMAP_ANIMATION_BOUNCE);
+	})
+</script>
